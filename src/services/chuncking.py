@@ -3,7 +3,6 @@ from agno.knowledge.chunking.fixed import FixedSizeChunking
 from agno.knowledge.chunking.recursive import RecursiveChunking
 from agno.knowledge.chunking.semantic import SemanticChunking
 from agno.knowledge.chunking.markdown import MarkdownChunking
-from agno.knowledge.chunking.code import CodeChunking
 
 from src.schemas.documents import (
     ChunkingRequest,

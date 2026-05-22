@@ -9,7 +9,9 @@ from src.schemas.models import (
     ReranckingModelsResponse,
     ChatModelsResponse
 )
-from src.services.database.models_db import get_available_embedding_models
+from src.services.database.models_db import (
+    get_available_embedding_models
+)
 
 router = APIRouter(prefix="/models", tags=["models"])
 

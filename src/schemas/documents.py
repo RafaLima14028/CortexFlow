@@ -1,4 +1,8 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    model_validator
+)
 from typing import Any, Optional, Literal
 from fastapi import HTTPException, status
 

@@ -13,16 +13,12 @@ from src.core.security import (
     get_token_from_header
 )
 from src.core.settings import get_settings
-from src.core.database import (
-    get_db,
-    get_agent_db
-)
+from src.core.database import get_agent_db
 from src.services.database.chat_db import (
     get_messages_by_chat_id,
     get_all_id_by_user_id
 )
 from src.schemas.chat import (
-    ChatResponse,
     ChatPostRequest,
     ChatPostResponse
 )

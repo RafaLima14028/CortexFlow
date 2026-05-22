@@ -15,11 +15,3 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     token_type: str = "Bearer"
     access_token: str
-
-
-class RefreshRequest(BaseModel):
-    ...
-
-
-class RefreshResponse(BaseModel):
-    ...
