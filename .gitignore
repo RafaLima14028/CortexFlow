@@ -1,0 +1,115 @@
+# --- Python ---
+# Bytecode compilado
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Distribuição / empacotamento
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+sdist/
+*.whl
+
+# Ambientes virtuais
+venv/
+env/
+.venv/
+.virtualenvs/
+ENV/
+env.bak/
+venv.bak/
+
+# Variáveis de ambiente (NÃO commitar arquivos .env reais)
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Arquivos de lock do pip (se usar pip-tools)
+# requirements.txt deve ser commitado se for o meio de gerenciamento de dependências
+# Mas se gerar um lock alternativo, ignore:
+# requirements/*.lock    # ajuste conforme necessidade
+
+# --- Agno (IA Agent Framework) ---
+# Possíveis diretórios de armazenamento local de estado, memória ou logs do Agno
+agno_storage/
+.agno/
+agent_logs/
+*.agno.db
+*.agno.json
+# Ignora cache de ferramentas ou modelos locais (se aplicável)
+.llm_cache/
+
+# --- FastAPI ---
+# Cobertura de testes e relatórios HTML
+htmlcov/
+.coverage
+.coverage.*
+*.cover
+.pytest_cache/
+.tox/
+coverage.xml
+
+# Geração de documentação automática (se usar Sphinx, MkDocs etc.)
+site/
+
+# --- Pip ---
+# Não é comum gerar arquivos ignoráveis com pip puro,
+# mas se usar pip freeze para exportar, o requirements.txt
+# deve ser versionado. Se exportar para uma pasta diferente:
+# requirements/*.txt   (descomente se precisar)
+
+# --- IDEs e editores ---
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# --- Sistema operacional ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# --- Outros ---
+# Logs
+*.log
+logs/
+*.sqlite3
+*.db
+dump.rdb
