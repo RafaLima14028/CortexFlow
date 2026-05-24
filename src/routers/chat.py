@@ -13,7 +13,7 @@ from src.core.security import (
     get_token_from_header
 )
 from src.core.settings import get_settings
-from src.core.database import get_agent_db
+from src.core.database import get_agent_db, get_db
 from src.services.database.chat_db import (
     get_messages_by_chat_id,
     get_all_id_by_user_id
@@ -23,8 +23,10 @@ from src.schemas.chat import (
     ChatPostResponse
 )
 from src.services.chat import (
+    UNSUPPORTED_RAG_MODEL_MESSAGE,
+    UnsupportedRagModelError,
     stream_chat,
-    sync_chat,
+    chat_once,
     generate_chat_id
 )
 
@@ -38,12 +40,20 @@ router = APIRouter(
     path="/stream"
 )
 async def ws_chat(
-    websocket: WebSocket
+    websocket: WebSocket,
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     OPENROUTER_API_KEY = get_settings().OPENROUTER_API_KEY
 
     token = websocket.query_params.get("token", None)
     model = websocket.query_params.get("model", None)
+    use_rag = websocket.query_params.get("use_rag", "true").lower() != "false"
+
+    try:
+        rag_limit = int(websocket.query_params.get("rag_limit", "5"))
+    except ValueError:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
 
     if not token or not model:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -88,16 +98,47 @@ async def ws_chat(
                 model=model,
                 user_message=user_message,
                 model_params=model_params,
-                api_key=OPENROUTER_API_KEY
+                api_key=OPENROUTER_API_KEY,
+                rag_db=db,
+                use_rag=use_rag,
+                rag_limit=rag_limit
             )
 
-            async for chunk in async_stream:
-                assistant_full_response += chunk
+            try:
+                async for chunk in async_stream:
+                    assistant_full_response += chunk
+
+                    await websocket.send_json({
+                        "event": "chunk",
+                        "content": chunk
+                    })
+            except UnsupportedRagModelError:
+                assistant_full_response = f"{UNSUPPORTED_RAG_MODEL_MESSAGE}\n\n"
 
                 await websocket.send_json({
                     "event": "chunk",
-                    "content": chunk
+                    "content": assistant_full_response
                 })
+
+                fallback_stream = stream_chat(
+                    user_id=user_id,
+                    chat_id=chat_id,
+                    model=model,
+                    user_message=user_message,
+                    model_params=model_params,
+                    api_key=OPENROUTER_API_KEY,
+                    rag_db=db,
+                    use_rag=False,
+                    rag_limit=rag_limit
+                )
+
+                async for chunk in fallback_stream:
+                    assistant_full_response += chunk
+
+                    await websocket.send_json({
+                        "event": "chunk",
+                        "content": chunk
+                    })
 
             await websocket.send_json({
                 "event": "complete_message",
@@ -163,7 +204,8 @@ async def get_chat(
 )
 async def post_chat(
     chat: ChatPostRequest,
-    payload: dict = Depends(get_token_from_header)
+    payload: dict = Depends(get_token_from_header),
+    db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     OPENROUTER_API_KEY = get_settings().OPENROUTER_API_KEY
 
@@ -174,14 +216,31 @@ async def post_chat(
     if not chat_id:
         chat_id = generate_chat_id()
 
-    agent_response: str = sync_chat(
-        user_id=user_id,
-        chat_id=chat_id,
-        model=chat.model_id,
-        user_message=chat.user_message,
-        model_params=chat.model_params,
-        api_key=OPENROUTER_API_KEY
-    )
+    try:
+        agent_response: str = await chat_once(
+            user_id=user_id,
+            chat_id=chat_id,
+            model=chat.model_id,
+            user_message=chat.user_message,
+            model_params=chat.model_params,
+            api_key=OPENROUTER_API_KEY,
+            rag_db=db,
+            use_rag=chat.use_rag,
+            rag_limit=chat.rag_limit
+        )
+    except UnsupportedRagModelError:
+        fallback_response = await chat_once(
+            user_id=user_id,
+            chat_id=chat_id,
+            model=chat.model_id,
+            user_message=chat.user_message,
+            model_params=chat.model_params,
+            api_key=OPENROUTER_API_KEY,
+            rag_db=db,
+            use_rag=False,
+            rag_limit=chat.rag_limit
+        )
+        agent_response = f"{UNSUPPORTED_RAG_MODEL_MESSAGE}\n\n{fallback_response}"
 
     return ChatPostResponse(
         chat_id=chat_id,

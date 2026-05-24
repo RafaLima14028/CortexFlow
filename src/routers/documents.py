@@ -25,6 +25,7 @@ from src.core.database import get_db
 from src.core.security import get_token_from_header
 from src.services.database.embeddings_db import (
     add_new_embedding,
+    ensure_vector_search_index,
     delete_embeddings_by_filename,
     get_embeddings
 )
@@ -86,10 +87,17 @@ async def post_documents_upload(
         db=db
     )
 
+    await ensure_vector_search_index(
+        collection=collection_name,
+        dimensions=embeddings_data[0].dimensions,
+        db=db
+    )
+
     await add_new_user_document(
         user_id=user_id,
         filename=file.filename,
         model_id=request_data.embedding.model_id,
+        embedding_model_params=request_data.embedding.model_params,
         collection_name=collection_name,
         db=db
     )

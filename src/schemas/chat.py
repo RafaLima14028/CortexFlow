@@ -1,5 +1,6 @@
 from pydantic import (
     BaseModel,
+    Field,
     field_validator
 )
 from typing import Any
@@ -20,8 +21,10 @@ class ChatResponse(BaseModel):
 class ChatPostRequest(BaseModel):
     model_id: str
     user_message: str
-    model_params: dict[str, Any] = {}
+    model_params: dict[str, Any] = Field(default_factory=dict)
     chat_id: str | None = None
+    use_rag: bool = True
+    rag_limit: int = Field(default=5, ge=1, le=20)
 
     @field_validator("user_message")
     @classmethod

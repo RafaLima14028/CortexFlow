@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
+from typing import Any
 
 from src.schemas.documents import (
     DocumentResponse,
@@ -11,6 +12,7 @@ async def add_new_user_document(
     user_id: str,
     filename: str,
     model_id: str,
+    embedding_model_params: dict[str, Any],
     collection_name: str,
     db: AsyncIOMotorDatabase
 ):
@@ -18,6 +20,7 @@ async def add_new_user_document(
         "user_id": ObjectId(user_id),
         "filename": filename,
         "model_id": model_id,
+        "embedding_model_params": embedding_model_params,
         "collection": collection_name
     })
 

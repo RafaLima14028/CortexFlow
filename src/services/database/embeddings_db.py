@@ -1,4 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.errors import OperationFailure
 from bson import ObjectId
 from typing import Any
 
@@ -10,6 +11,10 @@ from src.schemas.documents import (
 )
 
 BATCH_SIZE = 500
+
+
+def get_vector_search_index_name(collection: str) -> str:
+    return f"vector_index_{collection}"
 
 
 async def add_new_embedding(
@@ -50,6 +55,48 @@ async def add_new_embedding(
     return collection
 
 
+async def ensure_vector_search_index(
+    collection: str,
+    dimensions: int,
+    db: AsyncIOMotorDatabase
+) -> bool:
+    index_name = get_vector_search_index_name(collection)
+
+    try:
+        existing_indexes = db[collection].aggregate([
+            {"$listSearchIndexes": {"name": index_name}}
+        ])
+
+        async for _ in existing_indexes:
+            return True
+
+        await db.command({
+            "createSearchIndexes": collection,
+            "indexes": [
+                {
+                    "name": index_name,
+                    "type": "vectorSearch",
+                    "definition": {
+                        "fields": [
+                            {
+                                "type": "vector",
+                                "path": "embeddings",
+                                "numDimensions": dimensions,
+                                "similarity": "cosine"
+                            },
+                            {"type": "filter", "path": "user_id"},
+                            {"type": "filter", "path": "model_id"},
+                            {"type": "filter", "path": "meta_data.filename"}
+                        ]
+                    }
+                }
+            ]
+        })
+        return True
+    except OperationFailure:
+        return False
+
+
 async def delete_embeddings_by_filename(
     user_id: str,
     filename: str,
@@ -63,7 +110,7 @@ async def delete_embeddings_by_filename(
             result = await db[collection].delete_many(
                 {
                     "user_id": ObjectId(user_id),
-                    "filename": filename
+                    "meta_data.filename": filename
                 },
                 session=session
             )

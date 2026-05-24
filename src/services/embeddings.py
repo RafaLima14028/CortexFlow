@@ -12,48 +12,14 @@ async def generate_embedding(
     params: dict[str, Any],
     chunks: list[ChunkingResponse]
 ) -> list[EmbeddingsResults]:
-    headers = {
-        "Authorization": f"Bearer {get_settings().OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
     list_embeddings: list[EmbeddingsResults] = []
 
     for chunk in chunks:
-        payload = {
-            "model": model_id,
-            "input": chunk.chunk,
-            **params
-        }
-
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
-                url="https://openrouter.ai/api/v1/embeddings",
-                json=payload,
-                headers=headers
-            )
-
-            if response.status_code >= 400:
-                raise HTTPException(
-                    response.status_code,
-                    detail=response.json()
-                )
-
-        data = response.json().get("data", None)
-
-        if data is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="It was not possible to generate the embeddings"
-            )
-
-        embeddings = data[0].get("embedding", None)
-
-        if embeddings is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="It was not possible to generate the embeddings"
-            )
+        embeddings = await generate_text_embedding(
+            model_id=model_id,
+            params=params,
+            text=chunk.chunk
+        )
 
         list_embeddings.append(
             EmbeddingsResults(
@@ -66,3 +32,51 @@ async def generate_embedding(
         )
 
     return list_embeddings
+
+
+async def generate_text_embedding(
+    model_id: str,
+    params: dict[str, Any],
+    text: str
+) -> list[float]:
+    headers = {
+        "Authorization": f"Bearer {get_settings().OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": model_id,
+        "input": text,
+        **params
+    }
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        response = await client.post(
+            url="https://openrouter.ai/api/v1/embeddings",
+            json=payload,
+            headers=headers
+        )
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                response.status_code,
+                detail=response.json()
+            )
+
+    data = response.json().get("data", None)
+
+    if data is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="It was not possible to generate the embeddings"
+        )
+
+    embeddings = data[0].get("embedding", None)
+
+    if embeddings is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="It was not possible to generate the embeddings"
+        )
+
+    return embeddings

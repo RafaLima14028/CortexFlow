@@ -67,7 +67,7 @@ class ChunkingResponse(BaseModel):
 
 class EmbeddingRequest(BaseModel):
     model_id: str
-    model_params: dict[str, Any] = {}
+    model_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class EmbeddingResponse(BaseModel):
