@@ -22,7 +22,10 @@ from src.schemas.documents import (
     DocumentEmbeddingChunkResponse
 )
 from src.core.database import get_db
-from src.core.security import get_token_from_header
+from src.core.security import (
+    get_token_from_header,
+    extract_user_id_by_token
+)
 from src.services.database.embeddings_db import (
     add_new_embedding,
     ensure_vector_search_index,
@@ -35,6 +38,9 @@ from src.services.database.documents_db import (
     get_documents_by_user_id,
     get_documents_by_user_id_and_document_id,
     delete_document_by_id
+)
+from src.services.file_validator import (
+    validate_upload_file
 )
 
 router = APIRouter(
@@ -62,11 +68,14 @@ async def post_documents_upload(
             "Invalid JSON in document_data"
         )
 
-    user_id = payload.get("sub")
+    user_id = extract_user_id_by_token(payload)
 
-    binary_content = await file.read()
+    binary_content = await validate_upload_file(file)
 
-    text_content = extract_text(file.filename, binary_content)
+    text_content = extract_text(
+        filename=file.filename,
+        content=binary_content
+    )
 
     chunk_response: list[ChunkingResponse] = await chunck_document(
         text_content=text_content,

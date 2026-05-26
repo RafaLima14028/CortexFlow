@@ -1,13 +1,15 @@
 import json
 from typing import Any
 
-from bson import ObjectId
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.errors import OperationFailure
 
 from src.services.database.embeddings_db import get_vector_search_index_name
 from src.services.embeddings import generate_text_embedding
+from src.services.database.db import (
+    validate_object_id
+)
 
 
 async def get_vector_search_index_metadata(
@@ -18,7 +20,9 @@ async def get_vector_search_index_metadata(
 
     try:
         cursor = db[collection].aggregate([
-            {"$listSearchIndexes": {}}
+            {
+                "$listSearchIndexes": {}
+            }
         ])
 
         fallback_index: dict[str, Any] | None = None
@@ -77,7 +81,7 @@ async def search_user_vector_documents(
             detail="rag_limit must be greater than zero"
         )
 
-    user_object_id = ObjectId(user_id)
+    user_object_id = validate_object_id(user_id)
     documents_cursor = db["documents"].find({
         "user_id": user_object_id
     })

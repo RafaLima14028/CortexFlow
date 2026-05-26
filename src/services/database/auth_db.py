@@ -1,9 +1,11 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from bson import ObjectId
 
 from src.models.auth import (
     UserResponse,
     UserRegister
+)
+from src.services.database.db import (
+    validate_object_id
 )
 
 
@@ -12,7 +14,7 @@ async def user_exists_by_id(
     db: AsyncIOMotorDatabase
 ) -> bool:
     user = await db["users"].find_one({
-        "_id": ObjectId(user_id)
+        "_id": validate_object_id(user_id)
     })
 
     return user is not None

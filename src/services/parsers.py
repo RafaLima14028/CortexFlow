@@ -3,6 +3,19 @@ from io import BytesIO
 from pypdf import PdfReader
 from docx import Document
 from bs4 import BeautifulSoup
+import re
+
+
+def validate_empty_input(
+    text: str
+) -> None:
+    pattern = r"^\s*$"
+
+    if re.match(pattern=pattern, string=text):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File is empty"
+        )
 
 
 def extract_pdf(content: bytes) -> str:
@@ -41,16 +54,20 @@ def extract_txt(content: bytes) -> str:
 def extract_text(filename: str, content: bytes) -> str:
     ext = filename.split(".")[-1].lower()
 
+    text = ""
+
     if ext == "pdf":
-        return extract_pdf(content)
+        text = extract_pdf(content)
     if ext == "docx":
-        return extract_docx(content)
+        text = extract_docx(content)
     if ext in ["html", "htm"]:
-        return extract_html(content)
+        text = extract_html(content)
     if ext == "txt":
-        return extract_txt(content)
+        text = extract_txt(content)
+
+    validate_empty_input(text=text)
 
     raise HTTPException(
-        status.HTTP_422_UNPROCESSABLE_CONTENT,
-        f"Error: {ext} unaprocessable"
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail=f"{ext} is unaprocessable"
     )

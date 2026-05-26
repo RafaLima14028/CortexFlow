@@ -27,7 +27,8 @@ from src.core.security import (
     hash_password,
     verify_hashed_password,
     create_jwt_token,
-    decode_jwt_token
+    decode_jwt_token,
+    extract_user_id_by_token
 )
 
 router = APIRouter(
@@ -129,6 +130,8 @@ async def post_refresh_token_user(
 
     payload = decode_jwt_token(refresh_token)
 
+    user_id = extract_user_id_by_token(payload)
+
     user_exists = await user_exists_by_id(user_id, db)
 
     if not user_exists:
@@ -142,8 +145,6 @@ async def post_refresh_token_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token"
         )
-
-    user_id = payload.get("sub")
 
     access_token = create_jwt_token(user_id, False, "access")
     refresh_token = create_jwt_token(user_id, True, "refresh")

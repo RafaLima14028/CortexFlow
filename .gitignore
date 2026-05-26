@@ -112,3 +112,4 @@ logs/
 *.sqlite3
 *.db
 dump.rdb
+PLAN*.md

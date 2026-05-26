@@ -14,6 +14,18 @@ from fastapi import (
 from src.core.settings import get_settings
 
 
+def extract_user_id_by_token(
+    payload: dict
+) -> str:
+    user_id = payload.get("sub", None)
+
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+
+
 def get_token_from_header(
     authorization: str = Header(...)
 ) -> dict:
@@ -27,7 +39,8 @@ def get_token_from_header(
 
     payload = decode_jwt_token(token)
 
-    if payload.get("sub", None) is None or payload.get("type", None) is None:
+    if extract_user_id_by_token(payload) is None or \
+            payload.get("type", None) is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"

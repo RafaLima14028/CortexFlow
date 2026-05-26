@@ -1,10 +1,12 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from bson import ObjectId
 from typing import Any
 
 from src.schemas.documents import (
     DocumentResponse,
     DocumentResponseInternal
+)
+from src.services.database.db import (
+    validate_object_id
 )
 
 
@@ -15,9 +17,9 @@ async def add_new_user_document(
     embedding_model_params: dict[str, Any],
     collection_name: str,
     db: AsyncIOMotorDatabase
-):
+) -> None:
     await db["documents"].insert_one({
-        "user_id": ObjectId(user_id),
+        "user_id": validate_object_id(user_id),
         "filename": filename,
         "model_id": model_id,
         "embedding_model_params": embedding_model_params,
@@ -30,7 +32,7 @@ async def get_documents_by_user_id(
     db: AsyncIOMotorDatabase
 ) -> list[DocumentResponse]:
     documents = db["documents"].find({
-        "user_id": ObjectId(user_id)
+        "user_id": validate_object_id(user_id)
     })
 
     list_documents: list[DocumentResponse] = []
@@ -53,8 +55,8 @@ async def get_documents_by_user_id_and_document_id(
     db: AsyncIOMotorDatabase
 ) -> tuple[DocumentResponse, str] | None:
     document = await db["documents"].find_one({
-        "user_id": ObjectId(user_id),
-        "_id": ObjectId(document_id)
+        "user_id": validate_object_id(user_id),
+        "_id": validate_object_id(document_id)
     })
 
     if document is not None:
@@ -76,8 +78,8 @@ async def delete_document_by_id(
     db: AsyncIOMotorDatabase
 ) -> DocumentResponseInternal | None:
     deleted_doc = await db["documents"].find_one_and_delete({
-        "user_id": ObjectId(user_id),
-        "_id": ObjectId(document_id)
+        "user_id": validate_object_id(user_id),
+        "_id": validate_object_id(document_id)
     })
 
     if deleted_doc is not None:
