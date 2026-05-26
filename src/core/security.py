@@ -109,8 +109,3 @@ def verify_hashed_password(
         password.encode(),
         password_hashed.encode()
     )
-
-
-if __name__ == "__main__":
-    print(verify_hashed_password(
-        "$2b$12$8wxWpShSCBsWqwTmR/F1meVkX2bKbrWtMBHpe.cYFAWWkDeC0mRg2", "123"))
