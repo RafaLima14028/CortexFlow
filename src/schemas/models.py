@@ -7,7 +7,7 @@ class EmbeddingsModelsResponse(BaseModel):
     supported_parameters: list[str] = None
 
 
-class ReranckingModelsResponse(BaseModel):
+class RerankingModelsResponse(BaseModel):
     id: str
     name: str
     supported_parameters: list[str] = None

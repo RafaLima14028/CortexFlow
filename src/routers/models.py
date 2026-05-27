@@ -1,4 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status
+)
 import httpx
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -6,7 +11,7 @@ from src.core.settings import get_settings
 from src.core.database import get_db
 from src.schemas.models import (
     EmbeddingsModelsResponse,
-    ReranckingModelsResponse,
+    RerankingModelsResponse,
     ChatModelsResponse
 )
 from src.services.database.models_db import (
@@ -27,21 +32,34 @@ async def get_embeddings_from_openrouter(
 
 
 @router.get(
-    "/rerancking",
-    response_model=list[ReranckingModelsResponse]
+    "/reranking",
+    response_model=list[RerankingModelsResponse]
 )
-async def get_rerancking_from_openrouter():
+async def get_reranking_from_openrouter():
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url="https://openrouter.ai/api/v1/models",
-            headers={
-                "Authorization": f"Bearer {get_settings().OPENROUTER_API_KEY}"
-            }
-        )
+        try:
+            response = await client.get(
+                url="https://openrouter.ai/api/v1/models",
+                headers={
+                    "Authorization": f"Bearer {get_settings().OPENROUTER_API_KEY}"
+                }
+            )
 
-        data = response.json()["data"]
+            response.raise_for_status()
 
-    models: list[ReranckingModelsResponse] = []
+            data = response.json()["data"]
+        except httpx.HTTPStatusError:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Error searching for models in OpenRouter"
+            )
+        except httpx.RequestError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Not possible connect to OpenRouter"
+            )
+
+    models: list[RerankingModelsResponse] = []
 
     for model in data:
         model_id = model.get("id", "").lower()
@@ -64,7 +82,7 @@ async def get_rerancking_from_openrouter():
 
         if is_reranker:
             models.append(
-                ReranckingModelsResponse(
+                RerankingModelsResponse(
                     id=model["id"],
                     name=model["name"],
                     supported_parameters=model["supported_parameters"]
@@ -80,14 +98,27 @@ async def get_rerancking_from_openrouter():
 )
 async def get_chat_models():
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(
-            url="https://openrouter.ai/api/v1/models",
-            headers={
-                "Authorization": f"Bearer {get_settings().OPENROUTER_API_KEY}"
-            }
-        )
+        try:
+            response = await client.get(
+                url="https://openrouter.ai/api/v1/models",
+                headers={
+                    "Authorization": f"Bearer {get_settings().OPENROUTER_API_KEY}"
+                }
+            )
 
-        data = response.json()["data"]
+            response.raise_for_status()
+
+            data = response.json()["data"]
+        except httpx.HTTPStatusError:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Error searching for models in OpenRouter"
+            )
+        except httpx.RequestError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Not possible connect to OpenRouter"
+            )
 
     chat_models: list[ChatModelsResponse] = []
 
