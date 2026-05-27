@@ -1,28 +1,17 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.models.auth import (
-    UserResponse,
-    UserRegister
-)
-from src.services.database.db import (
-    validate_object_id
-)
+from src.models.auth import UserRegister, UserResponse
+from src.services.database.db import validate_object_id
 
 
-async def user_exists_by_id(
-    user_id: str,
-    db: AsyncIOMotorDatabase
-) -> bool:
-    user = await db["users"].find_one({
-        "_id": validate_object_id(user_id)
-    })
+async def user_exists_by_id(user_id: str, db: AsyncIOMotorDatabase) -> bool:
+    user = await db["users"].find_one({"_id": validate_object_id(user_id)})
 
     return user is not None
 
 
 async def get_user_by_email(
-    email: str,
-    db: AsyncIOMotorDatabase
+    email: str, db: AsyncIOMotorDatabase
 ) -> UserResponse | None:
     user_dict = await db["users"].find_one({"email": email})
 
@@ -34,12 +23,7 @@ async def get_user_by_email(
     return UserResponse(**user_dict)
 
 
-async def add_new_user(
-    user: UserRegister,
-    db: AsyncIOMotorDatabase
-):
-    await db["users"].insert_one(
-        user.model_dump()
-    )
+async def add_new_user(user: UserRegister, db: AsyncIOMotorDatabase):
+    await db["users"].insert_one(user.model_dump())
 
     return True

@@ -1,20 +1,18 @@
-from fastapi import status, HTTPException
-from io import BytesIO
-from pypdf import PdfReader
-from docx import Document
-from bs4 import BeautifulSoup
 import re
+from io import BytesIO
+
+from bs4 import BeautifulSoup
+from docx import Document
+from fastapi import HTTPException, status
+from pypdf import PdfReader
 
 
-def validate_empty_input(
-    text: str
-) -> None:
+def validate_empty_input(text: str) -> None:
     pattern = r"^\s*$"
 
     if re.match(pattern=pattern, string=text):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File is empty"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File is empty"
         )
 
 
@@ -35,10 +33,7 @@ def extract_pdf(content: bytes) -> str:
 def extract_docx(content: bytes) -> str:
     doc = Document(BytesIO(content))
 
-    return "\n".join(
-        paragraph.text
-        for paragraph in doc.paragraphs
-    )
+    return "\n".join(paragraph.text for paragraph in doc.paragraphs)
 
 
 def extract_html(content: bytes) -> str:
@@ -69,5 +64,5 @@ def extract_text(filename: str, content: bytes) -> str:
 
     raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=f"{ext} is unaprocessable"
+        detail=f"{ext} is unaprocessable",
     )

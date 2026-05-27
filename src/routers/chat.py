@@ -1,48 +1,24 @@
-from fastapi import (
-    APIRouter,
-    WebSocket,
-    WebSocketDisconnect,
-    status,
-    Depends,
-    Query
-)
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.core.security import (
-    decode_jwt_token,
-    get_token_from_header
-)
-from src.core.settings import get_settings
 from src.core.database import get_agent_db, get_db
-from src.services.database.chat_db import (
-    get_messages_by_chat_id,
-    get_all_id_by_user_id
-)
-from src.schemas.chat import (
-    ChatPostRequest,
-    ChatPostResponse
-)
+from src.core.security import decode_jwt_token, get_token_from_header
+from src.core.settings import get_settings
+from src.schemas.chat import ChatPostRequest, ChatPostResponse
 from src.services.chat import (
     UNSUPPORTED_RAG_MODEL_MESSAGE,
     UnsupportedRagModelError,
-    stream_chat,
     chat_once,
-    generate_chat_id
+    generate_chat_id,
+    stream_chat,
 )
+from src.services.database.chat_db import get_all_id_by_user_id, get_messages_by_chat_id
 
-router = APIRouter(
-    prefix="/chat",
-    tags=["chat"]
-)
+router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-@router.websocket(
-    path="/stream"
-)
-async def ws_chat(
-    websocket: WebSocket,
-    db: AsyncIOMotorDatabase = Depends(get_db)
-):
+@router.websocket(path="/stream")
+async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_db)):
     OPENROUTER_API_KEY = get_settings().OPENROUTER_API_KEY
 
     token = websocket.query_params.get("token", None)
@@ -63,25 +39,19 @@ async def ws_chat(
         payload = decode_jwt_token(token)
         user_id = payload.get("sub")
     except Exception:
-        await websocket.close(
-            code=status.WS_1008_POLICY_VIOLATION
-        )
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
     chat_id = generate_chat_id()
 
     await websocket.accept()
-    await websocket.send_json({
-        "event": "accept_connection",
-        "chat_id": chat_id
-    })
+    await websocket.send_json({"event": "accept_connection", "chat_id": chat_id})
 
     try:
         model_params = await websocket.receive_json()
-        await websocket.send_json({
-            "event": "Model params received",
-            "params": model_params
-        })
+        await websocket.send_json(
+            {"event": "Model params received", "params": model_params}
+        )
 
         while True:
             msg = await websocket.receive_json()
@@ -101,24 +71,20 @@ async def ws_chat(
                 api_key=OPENROUTER_API_KEY,
                 rag_db=db,
                 use_rag=use_rag,
-                rag_limit=rag_limit
+                rag_limit=rag_limit,
             )
 
             try:
                 async for chunk in async_stream:
                     assistant_full_response += chunk
 
-                    await websocket.send_json({
-                        "event": "chunk",
-                        "content": chunk
-                    })
+                    await websocket.send_json({"event": "chunk", "content": chunk})
             except UnsupportedRagModelError:
                 assistant_full_response = f"{UNSUPPORTED_RAG_MODEL_MESSAGE}\n\n"
 
-                await websocket.send_json({
-                    "event": "chunk",
-                    "content": assistant_full_response
-                })
+                await websocket.send_json(
+                    {"event": "chunk", "content": assistant_full_response}
+                )
 
                 fallback_stream = stream_chat(
                     user_id=user_id,
@@ -129,21 +95,17 @@ async def ws_chat(
                     api_key=OPENROUTER_API_KEY,
                     rag_db=db,
                     use_rag=False,
-                    rag_limit=rag_limit
+                    rag_limit=rag_limit,
                 )
 
                 async for chunk in fallback_stream:
                     assistant_full_response += chunk
 
-                    await websocket.send_json({
-                        "event": "chunk",
-                        "content": chunk
-                    })
+                    await websocket.send_json({"event": "chunk", "content": chunk})
 
-            await websocket.send_json({
-                "event": "complete_message",
-                "message": assistant_full_response
-            })
+            await websocket.send_json(
+                {"event": "complete_message", "message": assistant_full_response}
+            )
 
             await websocket.send_json({"event": "message_end"})
     except WebSocketDisconnect:
@@ -160,52 +122,36 @@ async def ws_chat(
             pass
 
 
-@router.get(
-    path="/",
-    response_model=list[str]
-)
+@router.get(path="/", response_model=list[str])
 async def get_all_chat_id(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=10, ge=1, le=100),
     payload: dict = Depends(get_token_from_header),
-    db: AsyncIOMotorDatabase = Depends(get_agent_db)
+    db: AsyncIOMotorDatabase = Depends(get_agent_db),
 ):
     return await get_all_id_by_user_id(
-        user_id=payload.get("sub"),
-        db=db,
-        limit=limit,
-        skip=skip
+        user_id=payload.get("sub"), db=db, limit=limit, skip=skip
     )
 
 
-@router.get(
-    path="/{id}",
-    response_model=list
-)
+@router.get(path="/{id}", response_model=list)
 async def get_chat(
     id: str,
     payload: dict = Depends(get_token_from_header),
-    db: AsyncIOMotorDatabase = Depends(get_agent_db)
+    db: AsyncIOMotorDatabase = Depends(get_agent_db),
 ):
     user_id = payload.get("sub")
 
-    all_messages = await get_messages_by_chat_id(
-        chat_id=id,
-        user_id=user_id,
-        db=db
-    )
+    all_messages = await get_messages_by_chat_id(chat_id=id, user_id=user_id, db=db)
 
     return all_messages
 
 
-@router.post(
-    path="/",
-    response_model=ChatPostResponse
-)
+@router.post(path="/", response_model=ChatPostResponse)
 async def post_chat(
     chat: ChatPostRequest,
     payload: dict = Depends(get_token_from_header),
-    db: AsyncIOMotorDatabase = Depends(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_db),
 ):
     OPENROUTER_API_KEY = get_settings().OPENROUTER_API_KEY
 
@@ -226,7 +172,7 @@ async def post_chat(
             api_key=OPENROUTER_API_KEY,
             rag_db=db,
             use_rag=chat.use_rag,
-            rag_limit=chat.rag_limit
+            rag_limit=chat.rag_limit,
         )
     except UnsupportedRagModelError:
         fallback_response = await chat_once(
@@ -238,11 +184,8 @@ async def post_chat(
             api_key=OPENROUTER_API_KEY,
             rag_db=db,
             use_rag=False,
-            rag_limit=chat.rag_limit
+            rag_limit=chat.rag_limit,
         )
         agent_response = f"{UNSUPPORTED_RAG_MODEL_MESSAGE}\n\n{fallback_response}"
 
-    return ChatPostResponse(
-        chat_id=chat_id,
-        content=agent_response
-    )
+    return ChatPostResponse(chat_id=chat_id, content=agent_response)

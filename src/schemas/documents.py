@@ -1,10 +1,7 @@
-from pydantic import (
-    BaseModel,
-    Field,
-    model_validator
-)
-from typing import Any, Optional, Literal
+from typing import Any, Literal, Optional
+
 from fastapi import HTTPException, status
+from pydantic import BaseModel, Field, model_validator
 
 
 class ChunkingConfig(BaseModel):
@@ -15,18 +12,11 @@ class ChunkingConfig(BaseModel):
 
 
 class ChunkingRequest(BaseModel):
-    strategy: Literal[
-        "fixed",
-        "semantic",
-        "recursive",
-        "markdown"
-    ] = "fixed"
-    config: ChunkingConfig = Field(
-        default_factory=ChunkingConfig
-    )
+    strategy: Literal["fixed", "semantic", "recursive", "markdown"] = "fixed"
+    config: ChunkingConfig = Field(default_factory=ChunkingConfig)
 
-    @model_validator(mode='after')
-    def validate_strategy_parameters(self) -> 'ChunkingRequest':
+    @model_validator(mode="after")
+    def validate_strategy_parameters(self) -> "ChunkingRequest":
         strategy = self.strategy
         conf = self.config
 
@@ -38,12 +28,7 @@ class ChunkingRequest(BaseModel):
         }
 
         required_fields = requirements.get(strategy, [])
-        missing = [
-            field for field in required_fields if getattr(
-                conf,
-                field
-            ) is None
-        ]
+        missing = [field for field in required_fields if getattr(conf, field) is None]
 
         if missing:
             raise HTTPException(
@@ -52,8 +37,8 @@ class ChunkingRequest(BaseModel):
                     "error": "InvalidConfiguration",
                     "strategy": strategy,
                     "missing_fields": missing,
-                    "message": f"The strategy {strategy} need the fields: {', '.join(missing)}"
-                }
+                    "message": f"The strategy {strategy} need the fields: {', '.join(missing)}",
+                },
             )
 
         return self

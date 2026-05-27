@@ -1,14 +1,13 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
+
 from src.core.database import client as db_client
-
 from src.middlewares.cors_middleware import register_cors_middlware
-
-from src.routers.documents import router as documents_router
-from src.routers.models import router as models_router
 from src.routers.auth import router as auth_router
 from src.routers.chat import router as chat_router
+from src.routers.documents import router as documents_router
+from src.routers.models import router as models_router
 
 
 @asynccontextmanager
@@ -18,11 +17,7 @@ async def lifespan(app: FastAPI):
     db_client.close()
 
 
-app = FastAPI(
-    title="CortexFlow",
-    version="0.0.1",
-    lifespan=lifespan
-)
+app = FastAPI(title="CortexFlow", version="0.0.1", lifespan=lifespan)
 
 register_cors_middlware(app=app)
 
@@ -37,12 +32,7 @@ def home():
     return {"status": "ok"}
 
 
-if __name__ == "__main__":
+def main():
     import uvicorn
 
-    uvicorn.run(
-        "src.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)

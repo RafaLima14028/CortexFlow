@@ -15,31 +15,28 @@ async def upload_document(
     user_id: str,
     file: UploadFile,
     request_data: DocumentRequest,
-    db: AsyncIOMotorDatabase
+    db: AsyncIOMotorDatabase,
 ) -> None:
     binary_content = await validate_upload_file(file)
 
-    text_content = extract_text(
-        filename=file.filename,
-        content=binary_content
-    )
+    text_content = extract_text(filename=file.filename, content=binary_content)
 
     chunk_response: list[ChunkingResponse] = await chunck_document(
         text_content=text_content,
         filename=file.filename,
-        chunking_request=request_data.chunking
+        chunking_request=request_data.chunking,
     )
 
     embeddings_data: list[EmbeddingsResults] = await generate_embedding(
         model_id=request_data.embedding.model_id,
         params=request_data.embedding.model_params,
-        chunks=chunk_response
+        chunks=chunk_response,
     )
 
     if not embeddings_data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Embedding generation returned no data"
+            detail="Embedding generation returned no data",
         )
 
     client = db.client
@@ -51,7 +48,7 @@ async def upload_document(
                 user_id=user_id,
                 model_id=request_data.embedding.model_id,
                 db=db,
-                session=session
+                session=session,
             )
 
             await add_new_user_document(
@@ -61,5 +58,5 @@ async def upload_document(
                 embedding_model_params=request_data.embedding.model_params,
                 collection_name=collection_name,
                 db=db,
-                session=session
+                session=session,
             )

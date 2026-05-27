@@ -1,10 +1,10 @@
+import uuid
 from typing import Any, AsyncGenerator
+
 from agno.run.agent import RunOutput
 from motor.motor_asyncio import AsyncIOMotorDatabase
-import uuid
 
 from src.agents.conversation_agent import get_conversation_agent
-
 
 UNSUPPORTED_RAG_MODEL_MESSAGE = (
     "Este modelo nao tem suporte a consulta dos arquivos enviados. "
@@ -43,7 +43,7 @@ async def stream_chat(
     api_key: str,
     rag_db: AsyncIOMotorDatabase | None = None,
     use_rag: bool = True,
-    rag_limit: int = 5
+    rag_limit: int = 5,
 ) -> AsyncGenerator[str, None]:
     agent = get_conversation_agent(
         api_key=api_key,
@@ -53,28 +53,21 @@ async def stream_chat(
         model_params=model_params,
         rag_db=rag_db,
         use_rag=use_rag,
-        rag_limit=rag_limit
+        rag_limit=rag_limit,
     )
 
-    response_stream = agent.arun(
-        input=user_message,
-        stream=True
-    )
+    response_stream = agent.arun(input=user_message, stream=True)
 
     try:
         async for chunk in response_stream:
             if chunk and chunk.content:
                 if is_unsupported_rag_model_message(str(chunk.content)):
-                    raise UnsupportedRagModelError(
-                        UNSUPPORTED_RAG_MODEL_MESSAGE
-                    )
+                    raise UnsupportedRagModelError(UNSUPPORTED_RAG_MODEL_MESSAGE)
 
                 yield chunk.content
     except Exception as error:
         if is_unsupported_rag_model_error(error):
-            raise UnsupportedRagModelError(
-                UNSUPPORTED_RAG_MODEL_MESSAGE
-            ) from error
+            raise UnsupportedRagModelError(UNSUPPORTED_RAG_MODEL_MESSAGE) from error
 
         raise
 
@@ -88,7 +81,7 @@ async def chat_once(
     api_key: str,
     rag_db: AsyncIOMotorDatabase | None = None,
     use_rag: bool = True,
-    rag_limit: int = 5
+    rag_limit: int = 5,
 ) -> str:
     agent = get_conversation_agent(
         api_key=api_key,
@@ -98,27 +91,20 @@ async def chat_once(
         model_params=model_params,
         rag_db=rag_db,
         use_rag=use_rag,
-        rag_limit=rag_limit
+        rag_limit=rag_limit,
     )
 
     try:
-        response: RunOutput = await agent.arun(
-            input=user_message,
-            stream=False
-        )
+        response: RunOutput = await agent.arun(input=user_message, stream=False)
     except Exception as error:
         if is_unsupported_rag_model_error(error):
-            raise UnsupportedRagModelError(
-                UNSUPPORTED_RAG_MODEL_MESSAGE
-            ) from error
+            raise UnsupportedRagModelError(UNSUPPORTED_RAG_MODEL_MESSAGE) from error
 
         raise
 
     content = str(response.content)
 
     if is_unsupported_rag_model_message(content):
-        raise UnsupportedRagModelError(
-            UNSUPPORTED_RAG_MODEL_MESSAGE
-        )
+        raise UnsupportedRagModelError(UNSUPPORTED_RAG_MODEL_MESSAGE)
 
     return content
