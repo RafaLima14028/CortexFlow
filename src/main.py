@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 
 from src.core.database import client as db_client
 
+from src.middlewares.cors_middleware import register_cors_middlware
+
 from src.routers.documents import router as documents_router
 from src.routers.models import router as models_router
 from src.routers.auth import router as auth_router
@@ -22,6 +24,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+register_cors_middlware(app=app)
 
 app.include_router(documents_router)
 app.include_router(models_router)
