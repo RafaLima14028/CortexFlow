@@ -342,7 +342,7 @@ JWT_SECRET_TOKEN=your_jwt_secret
 ### 4. Run the API
 
 ```bash
-python -m uvicorn src.main:app --reload
+python -m src.main
 ```
 
 The API will be available at:
