@@ -11,12 +11,8 @@ from fastapi import (
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import json
 
-from src.services.parsers import extract_text
-from src.services.embeddings import generate_embedding
-from src.schemas.embeddings import EmbeddingsResults
 from src.schemas.documents import (
     DocumentRequest,
-    ChunkingResponse,
     DocumentResponse,
     DocumentResponseInternal,
     DocumentEmbeddingChunkResponse
@@ -27,21 +23,15 @@ from src.core.security import (
     extract_user_id_by_token
 )
 from src.services.database.embeddings_db import (
-    add_new_embedding,
-    ensure_vector_search_index,
     delete_embeddings_by_filename,
     get_embeddings
 )
-from src.services.chuncking import chunck_document
 from src.services.database.documents_db import (
-    add_new_user_document,
     get_documents_by_user_id,
     get_documents_by_user_id_and_document_id,
     delete_document_by_id
 )
-from src.services.file_validator import (
-    validate_upload_file
-)
+from src.services.documents import upload_document
 
 router = APIRouter(
     prefix="/documents",
@@ -70,44 +60,10 @@ async def post_documents_upload(
 
     user_id = extract_user_id_by_token(payload)
 
-    binary_content = await validate_upload_file(file)
-
-    text_content = extract_text(
-        filename=file.filename,
-        content=binary_content
-    )
-
-    chunk_response: list[ChunkingResponse] = await chunck_document(
-        text_content=text_content,
-        filename=file.filename,
-        chunking_request=request_data.chunking
-    )
-
-    embeddings_data: list[EmbeddingsResults] = await generate_embedding(
-        model_id=request_data.embedding.model_id,
-        params=request_data.embedding.model_params,
-        chunks=chunk_response
-    )
-
-    collection_name: str = await add_new_embedding(
-        embeddings=embeddings_data,
+    await upload_document(
+        request_data=request_data,
+        file=file,
         user_id=user_id,
-        model_id=request_data.embedding.model_id,
-        db=db
-    )
-
-    await ensure_vector_search_index(
-        collection=collection_name,
-        dimensions=embeddings_data[0].dimensions,
-        db=db
-    )
-
-    await add_new_user_document(
-        user_id=user_id,
-        filename=file.filename,
-        model_id=request_data.embedding.model_id,
-        embedding_model_params=request_data.embedding.model_params,
-        collection_name=collection_name,
         db=db
     )
 

@@ -1,5 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo.errors import OperationFailure
+from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorDatabase
 from bson import ObjectId
 from typing import Any
 
@@ -21,7 +20,8 @@ async def add_new_embedding(
     embeddings: list[EmbeddingsResults],
     user_id: str,
     model_id: str,
-    db: AsyncIOMotorDatabase
+    db: AsyncIOMotorDatabase,
+    session: AsyncIOMotorClientSession | None = None
 ) -> str:
     user_id = ObjectId(user_id)
     dimensions = embeddings[0].dimensions
@@ -36,65 +36,19 @@ async def add_new_embedding(
 
         documents.append(document)
 
-    client = db.client
+    for i in range(
+        0,
+        len(documents),
+        BATCH_SIZE
+    ):
+        batch = documents[i: i + BATCH_SIZE]
 
-    async with await client.start_session() as session:
-        async with session.start_transaction():
-            for i in range(
-                0,
-                len(documents),
-                BATCH_SIZE
-            ):
-                batch = documents[i: i + BATCH_SIZE]
-
-                await db[collection].insert_many(
-                    documents=batch,
-                    session=session
-                )
+        await db[collection].insert_many(
+            documents=batch,
+            session=session
+        )
 
     return collection
-
-
-async def ensure_vector_search_index(
-    collection: str,
-    dimensions: int,
-    db: AsyncIOMotorDatabase
-) -> bool:
-    index_name = get_vector_search_index_name(collection)
-
-    try:
-        existing_indexes = db[collection].aggregate([
-            {"$listSearchIndexes": {"name": index_name}}
-        ])
-
-        async for _ in existing_indexes:
-            return True
-
-        await db.command({
-            "createSearchIndexes": collection,
-            "indexes": [
-                {
-                    "name": index_name,
-                    "type": "vectorSearch",
-                    "definition": {
-                        "fields": [
-                            {
-                                "type": "vector",
-                                "path": "embeddings",
-                                "numDimensions": dimensions,
-                                "similarity": "cosine"
-                            },
-                            {"type": "filter", "path": "user_id"},
-                            {"type": "filter", "path": "model_id"},
-                            {"type": "filter", "path": "meta_data.filename"}
-                        ]
-                    }
-                }
-            ]
-        })
-        return True
-    except OperationFailure:
-        return False
 
 
 async def delete_embeddings_by_filename(

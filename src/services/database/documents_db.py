@@ -1,4 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorDatabase
 from typing import Any
 
 from src.schemas.documents import (
@@ -16,7 +16,8 @@ async def add_new_user_document(
     model_id: str,
     embedding_model_params: dict[str, Any],
     collection_name: str,
-    db: AsyncIOMotorDatabase
+    db: AsyncIOMotorDatabase,
+    session: AsyncIOMotorClientSession | None = None
 ) -> None:
     await db["documents"].insert_one({
         "user_id": validate_object_id(user_id),
@@ -24,7 +25,7 @@ async def add_new_user_document(
         "model_id": model_id,
         "embedding_model_params": embedding_model_params,
         "collection": collection_name
-    })
+    }, session=session)
 
 
 async def get_documents_by_user_id(
