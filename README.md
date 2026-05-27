@@ -111,6 +111,8 @@ src/
 │   ├── database.py
 │   ├── security.py
 │   └── settings.py
+├── middlewares/
+│   └── cors_middleware.py
 ├── models/
 │   └── auth.py
 ├── routers/
@@ -128,7 +130,9 @@ src/
 │   ├── database/
 │   ├── chat.py
 │   ├── chuncking.py
+│   ├── documents.py
 │   ├── embeddings.py
+│   ├── file_validator.py
 │   ├── parsers.py
 │   └── vector_search.py
 └── main.py
@@ -141,6 +145,7 @@ The code is split by responsibility:
 - `services/` contain application logic such as parsing, chunking, embeddings, chat, and vector search.
 - `services/database/` isolates MongoDB access.
 - `core/` centralizes configuration, database clients, and security helpers.
+- `middlewares/` contains FastAPI middleware registration.
 - `agents/` builds the Agno conversation agent and attaches tools.
 
 ---
@@ -214,22 +219,25 @@ If the selected model does not support tool calling, CortexFlow detects the fail
 
 ## Tech Stack
 
-| Category            | Technology                        |
-| ------------------- | --------------------------------- |
-| Language            | Python                            |
-| API framework       | FastAPI                           |
-| Data validation     | Pydantic                          |
-| ASGI server         | Uvicorn                           |
-| Database client     | Motor                             |
-| Database            | MongoDB / MongoDB Atlas           |
-| Vector search       | MongoDB Atlas Vector Search       |
-| Agent framework     | Agno                              |
-| LLM provider        | OpenRouter                        |
-| Embeddings provider | OpenRouter Embeddings API         |
-| Authentication      | JWT and bcrypt                    |
-| HTTP client         | httpx                             |
-| File parsing        | pypdf, python-docx, BeautifulSoup |
-| Streaming           | FastAPI WebSockets                |
+| Category             | Technology                        |
+| -------------------- | --------------------------------- |
+| Language             | Python 3.13                       |
+| API framework        | FastAPI                           |
+| Data validation      | Pydantic                          |
+| ASGI server          | Uvicorn                           |
+| Python version       | pyenv                             |
+| Project/dependencies | pyproject.toml, uv, uv.lock       |
+| Code quality         | Ruff and Black                    |
+| Database client      | Motor                             |
+| Database             | MongoDB / MongoDB Atlas           |
+| Vector search        | MongoDB Atlas Vector Search       |
+| Agent framework      | Agno                              |
+| LLM provider         | OpenRouter                        |
+| Embeddings provider  | OpenRouter Embeddings API         |
+| Authentication       | JWT and bcrypt                    |
+| HTTP client          | httpx                             |
+| File parsing         | pypdf, python-docx, BeautifulSoup |
+| Streaming            | FastAPI WebSockets                |
 
 ---
 
@@ -288,33 +296,36 @@ These pages are useful for exploring request bodies, response models, authentica
 
 ### Prerequisites
 
-- Python 3.11 or newer recommended
+- pyenv
+- uv
+- Python 3.13.2, matching `.python-version`
 - MongoDB Atlas cluster with Vector Search support
 - OpenRouter API key
 - A terminal with access to this repository
 
-### 1. Create a virtual environment
+### 1. Install the project Python version
 
 ```bash
-python -m venv .venv
+pyenv install 3.13.2
+pyenv local 3.13.2
 ```
 
-Activate it:
-
-```bash
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-```
-
-```bash
-# macOS / Linux
-source .venv/bin/activate
-```
+If Python 3.13.2 is already installed through pyenv, only `pyenv local 3.13.2` is needed. The selected version is stored in `.python-version`.
 
 ### 2. Install dependencies
 
+Dependencies are declared in `pyproject.toml` and locked in `uv.lock`.
+
 ```bash
-pip install -r requirements.txt
+uv sync
+```
+
+This creates and manages the local `.venv` automatically.
+
+To include development tools such as Ruff and Black:
+
+```bash
+uv sync --group dev
 ```
 
 ### 3. Configure environment variables
@@ -322,8 +333,8 @@ pip install -r requirements.txt
 Copy the example environment file:
 
 ```bash
-# Windows
-copy .env.example .env
+# Windows PowerShell
+Copy-Item .env.example .env
 ```
 
 ```bash
@@ -341,8 +352,16 @@ JWT_SECRET_TOKEN=your_jwt_secret
 
 ### 4. Run the API
 
+Use the project script declared in `pyproject.toml`:
+
 ```bash
-python -m src.main
+uv run cortex
+```
+
+Alternatively, run Uvicorn directly:
+
+```bash
+uv run uvicorn src.main:app --reload
 ```
 
 The API will be available at:
@@ -363,6 +382,22 @@ Expected response:
 {
   "status": "ok"
 }
+```
+
+### 5. Run code quality checks
+
+Ruff and Black are configured in `pyproject.toml`.
+
+```bash
+uv run ruff check .
+```
+
+```bash
+uv run ruff format --check .
+```
+
+```bash
+uv run black --check .
 ```
 
 ---
@@ -475,7 +510,7 @@ This is a strong backend MVP, but it is not presented as a finished production p
 - Add structured logs.
 - Add metrics for latency, token usage, and retrieval quality.
 - Add rate limiting.
-- Add CI checks.
+- Add CI checks using Ruff and Black.
 - Add API integration tests.
 - Add dashboard or frontend client.
 

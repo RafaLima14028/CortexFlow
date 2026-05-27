@@ -112,4 +112,5 @@ logs/
 *.sqlite3
 *.db
 dump.rdb
+.ruff_cache
 PLAN*.md
