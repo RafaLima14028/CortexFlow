@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, s
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.core.database import get_agent_db, get_db
-from src.core.security import decode_jwt_token, get_token_from_header
+from src.core.security import (
+    decode_jwt_token,
+    get_token_from_header,
+    extract_user_id_by_token,
+)
 from src.core.settings import get_settings
 from src.schemas.chat import ChatPostRequest, ChatPostResponse
 from src.services.chat import (
@@ -21,7 +25,6 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_db)):
     OPENROUTER_API_KEY = get_settings().OPENROUTER_API_KEY
 
-    token = websocket.query_params.get("token", None)
     model = websocket.query_params.get("model", None)
     use_rag = websocket.query_params.get("use_rag", "true").lower() != "false"
 
@@ -31,27 +34,34 @@ async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_d
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    if not token or not model:
+    if not model:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    await websocket.accept()
+    await websocket.send_json({"event": "wait_credentials"})
+    auth_message = await websocket.receive_json()
+
+    token = auth_message.get("token", None)
+
+    if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
     try:
         payload = decode_jwt_token(token)
-        user_id = payload.get("sub")
+        user_id = extract_user_id_by_token(payload=payload)
     except Exception:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
     chat_id = generate_chat_id()
 
-    await websocket.accept()
     await websocket.send_json({"event": "accept_connection", "chat_id": chat_id})
 
     try:
         model_params = await websocket.receive_json()
-        await websocket.send_json(
-            {"event": "Model params received", "params": model_params}
-        )
+        await websocket.send_json({"event": "model_params", "params": model_params})
 
         while True:
             msg = await websocket.receive_json()
