@@ -43,6 +43,7 @@ async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_d
     auth_message = await websocket.receive_json()
 
     token = auth_message.get("token", None)
+    chat_id = auth_message.get("chat_id", None)
 
     if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -55,7 +56,8 @@ async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_d
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    chat_id = generate_chat_id()
+    if chat_id is None:
+        chat_id = generate_chat_id()
 
     await websocket.send_json({"event": "accept_connection", "chat_id": chat_id})
 
