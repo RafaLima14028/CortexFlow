@@ -2,13 +2,26 @@ from typing import Any, Literal, Optional
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, model_validator
+from pydantic_core import PydanticCustomError
 
 
 class ChunkingConfig(BaseModel):
-    chunk_size: Optional[int] = None
-    overlap: Optional[int] = None
-    similarity_threshold: Optional[float] = None
+    chunk_size: Optional[int] = Field(default=None, ge=1)
+    overlap: Optional[int] = Field(default=None, ge=0)
+    similarity_threshold: Optional[float] = Field(default=None, ge=0)
     separators: Optional[list[str]] = None
+
+    @model_validator(mode="after")
+    def validate_chunk_size_and_overlap(self) -> "ChunkingConfig":
+        if self.overlap is not None and self.chunk_size is not None:
+            if self.overlap >= self.chunk_size:
+                raise PydanticCustomError(
+                    "invalid_overlap",
+                    "The value of 'overlap' must be smaller than 'chunk_size'",
+                    {"overlap": self.overlap, "chunk_size": self.chunk_size},
+                )
+
+        return self
 
 
 class ChunkingRequest(BaseModel):
