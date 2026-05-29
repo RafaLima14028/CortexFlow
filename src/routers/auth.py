@@ -24,9 +24,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def post_register_user(
     data: RegisterRequest, db: AsyncIOMotorDatabase = Depends(get_db)
 ):
+    data.email = data.email.lower()
+
     user: UserResponse | None = await get_user_by_email(data.email, db)
 
-    if isinstance(user, UserResponse):
+    if user is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="The user is already registered",

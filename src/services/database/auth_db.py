@@ -23,7 +23,5 @@ async def get_user_by_email(
     return UserResponse(**user_dict)
 
 
-async def add_new_user(user: UserRegister, db: AsyncIOMotorDatabase):
-    await db["users"].insert_one(user.model_dump())
-
-    return True
+async def add_new_user(user: UserRegister, db: AsyncIOMotorDatabase) -> None:
+    await db["users"].insert_one(document=user.model_dump())
