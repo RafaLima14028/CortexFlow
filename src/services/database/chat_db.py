@@ -62,13 +62,19 @@ async def get_messages_by_chat_id(
 
     index: int = 0
 
-    for run in message["runs"]:
-        for message in run["messages"]:
-            all_messages.append(
-                ChatResponseDB(
-                    index=index, content=message["content"], role=message["role"]
-                )
-            )
+    runs = message.get("runs", [])
+
+    for run in runs:
+        messages = run.get("messages", [])
+
+        for msg in messages:
+            content = msg.get("content", None)
+            role = msg.get("role", None)
+
+            if not content or not role:
+                continue
+
+            all_messages.append(ChatResponseDB(index=index, content=content, role=role))
 
             index += 1
 
