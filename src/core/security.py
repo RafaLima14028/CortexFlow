@@ -9,8 +9,9 @@ from src.core.settings import get_settings
 
 def extract_user_id_by_token(payload: dict) -> str:
     user_id = payload.get("sub", None)
+    token_type = payload.get("type", None)
 
-    if user_id is None:
+    if user_id is None or token_type is None or token_type != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
