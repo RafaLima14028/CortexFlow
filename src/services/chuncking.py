@@ -4,21 +4,22 @@ from agno.knowledge.chunking.recursive import RecursiveChunking
 from agno.knowledge.chunking.semantic import SemanticChunking
 from agno.knowledge.document import Document
 
-from src.schemas.documents import ChunkingRequest, ChunkingResponse
+from src.schemas.documents import ChunkingConfigRequest
+from src.models.documents import DocumentChunk
 
 
 async def fixed_size_chunking(
     chunk_size: int, overlap: int, document: Document
-) -> list[ChunkingResponse]:
+) -> list[DocumentChunk]:
     chunker = FixedSizeChunking(chunk_size=chunk_size, overlap=overlap)
 
     chunks = await chunker.achunk(document=document)
 
-    chunking_response: list[ChunkingResponse] = []
+    chunking_response: list[DocumentChunk] = []
 
     for chunk in chunks:
         chunking_response.append(
-            ChunkingResponse(
+            DocumentChunk(
                 chunk=chunk.content, id=chunk.id, meta_data=chunk.meta_data
             )
         )
@@ -28,16 +29,16 @@ async def fixed_size_chunking(
 
 async def semantic_chunking(
     similarity_threshold: float, document: Document
-) -> list[ChunkingResponse]:
+) -> list[DocumentChunk]:
     chunker = SemanticChunking(similarity_threshold=similarity_threshold)
 
     chunks = await chunker.achunk(document=document)
 
-    chunking_response: list[ChunkingResponse] = []
+    chunking_response: list[DocumentChunk] = []
 
     for chunk in chunks:
         chunking_response.append(
-            ChunkingResponse(
+            DocumentChunk(
                 chunk=chunk.content, id=chunk.id, meta_data=chunk.meta_data
             )
         )
@@ -47,16 +48,16 @@ async def semantic_chunking(
 
 async def recursive_chunking(
     chunk_size: int, overlap: int, document: Document
-) -> list[ChunkingResponse]:
+) -> list[DocumentChunk]:
     chunker = RecursiveChunking(chunk_size=chunk_size, overlap=overlap)
 
     chunks = await chunker.achunk(document=document)
 
-    chunking_response: list[ChunkingResponse] = []
+    chunking_response: list[DocumentChunk] = []
 
     for chunk in chunks:
         chunking_response.append(
-            ChunkingResponse(
+            DocumentChunk(
                 chunk=chunk.content, id=chunk.id, meta_data=chunk.meta_data
             )
         )
@@ -66,16 +67,16 @@ async def recursive_chunking(
 
 async def markdown_chunking(
     chunk_size: int, overlap: int, document: Document
-) -> list[ChunkingResponse]:
+) -> list[DocumentChunk]:
     chunker = MarkdownChunking(chunk_size=chunk_size, overlap=overlap)
 
     chunks = await chunker.achunk(document=document)
 
-    chunking_response: list[ChunkingResponse] = []
+    chunking_response: list[DocumentChunk] = []
 
     for chunk in chunks:
         chunking_response.append(
-            ChunkingResponse(
+            DocumentChunk(
                 chunk=chunk.content, id=chunk.id, meta_data=chunk.meta_data
             )
         )
@@ -86,9 +87,9 @@ async def markdown_chunking(
 async def chunck_document(
     text_content: str,
     filename: str,
-    chunking_request: ChunkingRequest,
+    chunking_request: ChunkingConfigRequest,
     extra_meta: dict | None = None,
-) -> list[ChunkingResponse]:
+) -> list[DocumentChunk]:
     if extra_meta:
         extra_meta["filename"] = filename
     else:

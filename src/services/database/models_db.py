@@ -1,21 +1,21 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.schemas.models import EmbeddingsModelsResponse
+from src.models.provider_models import AvailableEmbeddingModelInDB
 
 
 async def get_available_embedding_models(
     db: AsyncIOMotorDatabase,
-) -> list[EmbeddingsModelsResponse]:
+) -> list[AvailableEmbeddingModelInDB]:
     models_db = db["openrouter_available_embedding_models"].find({})
 
-    models: list[EmbeddingsModelsResponse] = []
+    models: list[AvailableEmbeddingModelInDB] = []
 
     async for model in models_db:
         models.append(
-            EmbeddingsModelsResponse(
+            AvailableEmbeddingModelInDB(
                 id=model["model_id"],
                 name=model["name"],
-                supported_parameters=model["supported_parameters"],
+                supported_parameters=model.get("supported_parameters"),
             )
         )
 

@@ -4,18 +4,18 @@ import httpx
 from fastapi import HTTPException, status
 
 from src.core.settings import get_settings
-from src.schemas.documents import ChunkingResponse
-from src.schemas.embeddings import EmbeddingsResults
+from src.models.documents import DocumentChunk
+from src.models.embeddings import EmbeddingResult
 from src.utils.batch_utils import batched
 
 
 async def generate_embedding(
-    model_id: str, params: dict[str, Any], chunks: list[ChunkingResponse]
-) -> list[EmbeddingsResults]:
+    model_id: str, params: dict[str, Any], chunks: list[DocumentChunk]
+) -> list[EmbeddingResult]:
     if not chunks:
         return []
 
-    all_results: list[EmbeddingsResults] = []
+    all_results: list[EmbeddingResult] = []
 
     for batch_chunk in batched(chunks, 64):
         texts = [chunk.chunk for chunk in batch_chunk]
@@ -32,7 +32,7 @@ async def generate_embedding(
 
         for chunk, embeddings in zip(batch_chunk, embeddings_list):
             all_results.append(
-                EmbeddingsResults(
+                EmbeddingResult(
                     embeddings=embeddings,
                     dimensions=len(embeddings),
                     chunk=chunk.chunk,
@@ -54,7 +54,7 @@ async def generate_text_embedding(
 
     payload = {"model": model_id, "input": texts, **params}
 
-    timeout = httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=5.0)
+    timeout = httpx.Timeout(connect=5.0, read=120.0, write=30.0, pool=10.0)
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -98,7 +98,7 @@ async def generate_text_embedding(
             detail="It was not possible to generate the embeddings",
         )
 
-    embeddings = list[list[float]] = []
+    embeddings: list[list[float]] = []
 
     for item in data:
         embedding = item.get("embedding", None)

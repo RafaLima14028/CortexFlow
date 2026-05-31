@@ -1,17 +1,16 @@
 from typing import Any
 
-from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
 
-class ChatResponseDB(BaseModel):
+class ChatMessageResponse(BaseModel):
     index: int
     content: str
     role: str
 
 
 class ChatResponse(BaseModel):
-    messages: list[ChatResponseDB]
+    messages: list[ChatMessageResponse]
     has_more: bool
 
 
@@ -27,9 +26,7 @@ class ChatPostRequest(BaseModel):
     @classmethod
     def validate_user_message(cls, value: str) -> str:
         if not value.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="User message is empty"
-            )
+            raise ValueError("User message is empty")
 
         return value
 

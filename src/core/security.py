@@ -16,6 +16,8 @@ def extract_user_id_by_token(payload: dict) -> str:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
 
+    return user_id
+
 
 def get_token_from_header(authorization: str = Header(...)) -> dict:
     schema, _, token = authorization.partition(" ")

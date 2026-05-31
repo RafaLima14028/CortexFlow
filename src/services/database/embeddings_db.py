@@ -3,12 +3,8 @@ from typing import Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorDatabase
 
-from src.schemas.documents import (
-    ChunkEmbeddingItem,
-    ChunkingResponse,
-    EmbeddingResponse,
-)
-from src.schemas.embeddings import EmbeddingsResults
+from src.models.documents import DocumentChunk, EmbeddingChunkInDB
+from src.models.embeddings import EmbeddingResult
 
 BATCH_SIZE = 500
 
@@ -18,7 +14,7 @@ def get_vector_search_index_name(collection: str) -> str:
 
 
 async def add_new_embedding(
-    embeddings: list[EmbeddingsResults],
+    embeddings: list[EmbeddingResult],
     user_id: str,
     model_id: str,
     db: AsyncIOMotorDatabase,
@@ -52,7 +48,7 @@ async def delete_embeddings_by_filename(
 
     async with await client.start_session() as session:
         async with session.start_transaction():
-            result = await db[collection].delete_many(
+            await db[collection].delete_many(
                 {"user_id": ObjectId(user_id), "meta_data.filename": filename},
                 session=session,
             )
@@ -60,20 +56,20 @@ async def delete_embeddings_by_filename(
 
 async def get_embeddings(
     user_id: str, filename: str, collection: str, db: AsyncIOMotorDatabase
-) -> ChunkEmbeddingItem:
+) -> list[EmbeddingChunkInDB]:
     cursor = db[collection].find(
         {"user_id": ObjectId(user_id), "meta_data.filename": filename}
     )
 
-    embeddings_data: list[ChunkEmbeddingItem] = []
+    embeddings_data: list[EmbeddingChunkInDB] = []
 
     async for doc in cursor:
         embeddings_data.append(
-            ChunkEmbeddingItem(
-                chunk=ChunkingResponse(
-                    chunk=doc["chunk"], id=str(doc["_id"]), meta_data=doc["meta_data"]
+            EmbeddingChunkInDB(
+                chunk=DocumentChunk(
+                    chunk=doc["chunk"], id=str(doc["_id"]), meta_data=doc.get("meta_data")
                 ),
-                embeddings=EmbeddingResponse(vector=doc["embeddings"]),
+                embeddings=doc["embeddings"],
             )
         )
 

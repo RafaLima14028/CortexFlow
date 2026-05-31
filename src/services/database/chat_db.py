@@ -2,7 +2,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.schemas.chat import ChatResponseDB
+from src.models.chat import ChatMessageInDB
 
 
 async def add_new_message(
@@ -48,7 +48,7 @@ async def get_all_id_by_user_id(
 
 async def get_messages_by_chat_id(
     chat_id: str, user_id: str, db: AsyncIOMotorDatabase
-) -> tuple[list[ChatResponseDB], bool]:
+) -> list[ChatMessageInDB]:
     message = await db["agno_sessions"].find_one(
         {"user_id": user_id, "session_id": chat_id}
     )
@@ -58,7 +58,7 @@ async def get_messages_by_chat_id(
             status_code=status.HTTP_404_NOT_FOUND, detail="Messages not found"
         )
 
-    all_messages: list[ChatResponseDB] = []
+    all_messages: list[ChatMessageInDB] = []
 
     index: int = 0
 
@@ -74,7 +74,7 @@ async def get_messages_by_chat_id(
             if not content or not role:
                 continue
 
-            all_messages.append(ChatResponseDB(index=index, content=content, role=role))
+            all_messages.append(ChatMessageInDB(index=index, content=content, role=role))
 
             index += 1
 

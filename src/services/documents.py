@@ -1,8 +1,9 @@
 from fastapi import HTTPException, UploadFile, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.schemas.documents import ChunkingResponse, DocumentRequest
-from src.schemas.embeddings import EmbeddingsResults
+from src.schemas.documents import DocumentIngestionRequest
+from src.models.documents import DocumentChunk
+from src.models.embeddings import EmbeddingResult
 from src.services.chuncking import chunck_document
 from src.services.database.documents_db import add_new_user_document
 from src.services.database.embeddings_db import add_new_embedding
@@ -14,20 +15,22 @@ from src.services.parsers import extract_text
 async def upload_document(
     user_id: str,
     file: UploadFile,
-    request_data: DocumentRequest,
+    request_data: DocumentIngestionRequest,
     db: AsyncIOMotorDatabase,
 ) -> None:
     binary_content = await validate_upload_file(file)
 
+    await file.close()
+
     text_content = extract_text(filename=file.filename, content=binary_content)
 
-    chunk_response: list[ChunkingResponse] = await chunck_document(
+    chunk_response: list[DocumentChunk] = await chunck_document(
         text_content=text_content,
         filename=file.filename,
         chunking_request=request_data.chunking,
     )
 
-    embeddings_data: list[EmbeddingsResults] = await generate_embedding(
+    embeddings_data: list[EmbeddingResult] = await generate_embedding(
         model_id=request_data.embedding.model_id,
         params=request_data.embedding.model_params,
         chunks=chunk_response,

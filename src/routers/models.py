@@ -4,22 +4,32 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.core.database import get_db
 from src.core.settings import get_settings
-from src.schemas.models import (
-    ChatModelsResponse,
-    EmbeddingsModelsResponse,
-    RerankingModelsResponse,
+from src.schemas.provider_models import (
+    ChatModelResponse,
+    EmbeddingModelResponse,
+    RerankingModelResponse,
 )
+from src.models.provider_models import AvailableEmbeddingModelInDB
 from src.services.database.models_db import get_available_embedding_models
 
 router = APIRouter(prefix="/models", tags=["models"])
 
 
-@router.get("/embeddings", response_model=list[EmbeddingsModelsResponse])
+@router.get("/embeddings", response_model=list[EmbeddingModelResponse])
 async def get_embeddings_from_openrouter(db: AsyncIOMotorDatabase = Depends(get_db)):
-    return await get_available_embedding_models(db=db)
+    db_models: list[AvailableEmbeddingModelInDB] = await get_available_embedding_models(db=db)
+
+    return [
+        EmbeddingModelResponse(
+            id=model.id,
+            name=model.name,
+            supported_parameters=model.supported_parameters,
+        )
+        for model in db_models
+    ]
 
 
-@router.get("/reranking", response_model=list[RerankingModelsResponse])
+@router.get("/reranking", response_model=list[RerankingModelResponse])
 async def get_reranking_from_openrouter():
     async with httpx.AsyncClient() as client:
         try:
@@ -44,7 +54,7 @@ async def get_reranking_from_openrouter():
                 detail="Not possible connect to OpenRouter",
             )
 
-    models: list[RerankingModelsResponse] = []
+    models: list[RerankingModelResponse] = []
 
     for model in data:
         model_id = model.get("id", "").lower()
@@ -66,7 +76,7 @@ async def get_reranking_from_openrouter():
 
         if is_reranker:
             models.append(
-                RerankingModelsResponse(
+                RerankingModelResponse(
                     id=model["id"],
                     name=model["name"],
                     supported_parameters=model["supported_parameters"],
@@ -76,7 +86,7 @@ async def get_reranking_from_openrouter():
     return models
 
 
-@router.get("/chat", response_model=list[ChatModelsResponse])
+@router.get("/chat", response_model=list[ChatModelResponse])
 async def get_chat_models():
     async with httpx.AsyncClient(timeout=30) as client:
         try:
@@ -101,7 +111,7 @@ async def get_chat_models():
                 detail="Not possible connect to OpenRouter",
             )
 
-    chat_models: list[ChatModelsResponse] = []
+    chat_models: list[ChatModelResponse] = []
 
     for model in data:
         architecture = model.get("architecture", {})
@@ -112,7 +122,7 @@ async def get_chat_models():
 
         if "text" in input_modalities and "text" in output_modalities:
             chat_models.append(
-                ChatModelsResponse(
+                ChatModelResponse(
                     id=model["id"],
                     name=model["name"],
                     supported_parameters=model["supported_parameters"],

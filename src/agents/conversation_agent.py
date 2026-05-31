@@ -5,7 +5,6 @@ from fastapi import HTTPException, status
 from agno.agent import Agent
 from agno.db.mongo import MongoDb
 from agno.models.openrouter import OpenRouter
-from agno.tools.reasoning import ReasoningTools
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.core.settings import get_settings
@@ -40,7 +39,7 @@ def get_conversation_agent(
 
     mongodb_storage = MongoDb(db_url=get_settings().MONGODB_URL)
 
-    tools = [ReasoningTools(add_instructions=True)]
+    tools = []
 
     if use_rag and rag_db is not None:
         tools.append(

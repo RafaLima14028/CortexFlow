@@ -1,19 +1,19 @@
 from pydantic import BaseModel
 
 
-class EmbeddingsModelsResponse(BaseModel):
+class EmbeddingModelResponse(BaseModel):
     id: str
     name: str
     supported_parameters: list[str] = None
 
 
-class RerankingModelsResponse(BaseModel):
+class RerankingModelResponse(BaseModel):
     id: str
     name: str
     supported_parameters: list[str] = None
 
 
-class ChatModelsResponse(BaseModel):
+class ChatModelResponse(BaseModel):
     id: str
     name: str
     supported_parameters: list[str] = None

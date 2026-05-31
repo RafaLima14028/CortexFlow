@@ -9,7 +9,7 @@ from src.core.security import (
     hash_password,
     verify_hashed_password,
 )
-from src.models.auth import UserRegister, UserResponse
+from src.models.auth import UserCreate, UserInDB
 from src.schemas.auth import LoginRequest, LoginResponse, RegisterRequest
 from src.services.database.auth_db import (
     add_new_user,
@@ -26,7 +26,7 @@ async def post_register_user(
 ):
     data.email = data.email.lower()
 
-    user: UserResponse | None = await get_user_by_email(data.email, db)
+    user: UserInDB | None = await get_user_by_email(data.email, db)
 
     if user is not None:
         raise HTTPException(
@@ -35,7 +35,7 @@ async def post_register_user(
         )
 
     await add_new_user(
-        UserRegister(
+        UserCreate(
             name=data.name,
             email=data.email,
             hashed_password=hash_password(data.password),
@@ -52,7 +52,7 @@ async def post_register_user(
 async def post_login_user(
     data: LoginRequest, response: Response, db: AsyncIOMotorDatabase = Depends(get_db)
 ):
-    user: UserResponse | None = await get_user_by_email(data.email, db)
+    user: UserInDB | None = await get_user_by_email(data.email, db)
 
     if not user:
         raise HTTPException(

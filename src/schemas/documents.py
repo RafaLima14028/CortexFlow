@@ -1,6 +1,5 @@
 from typing import Any, Literal, Optional
 
-from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 
@@ -24,12 +23,12 @@ class ChunkingConfig(BaseModel):
         return self
 
 
-class ChunkingRequest(BaseModel):
+class ChunkingConfigRequest(BaseModel):
     strategy: Literal["fixed", "semantic", "recursive", "markdown"] = "fixed"
     config: ChunkingConfig = Field(default_factory=ChunkingConfig)
 
     @model_validator(mode="after")
-    def validate_strategy_parameters(self) -> "ChunkingRequest":
+    def validate_strategy_parameters(self) -> "ChunkingConfigRequest":
         strategy = self.strategy
         conf = self.config
 
@@ -44,37 +43,21 @@ class ChunkingRequest(BaseModel):
         missing = [field for field in required_fields if getattr(conf, field) is None]
 
         if missing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "error": "InvalidConfiguration",
-                    "strategy": strategy,
-                    "missing_fields": missing,
-                    "message": f"The strategy {strategy} need the fields: {', '.join(missing)}",
-                },
+            raise ValueError(
+                f"The strategy {strategy} need the fields: {', '.join(missing)}"
             )
 
         return self
 
 
-class ChunkingResponse(BaseModel):
-    chunk: str
-    id: str
-    meta_data: dict[str, Any] = None
-
-
-class EmbeddingRequest(BaseModel):
+class EmbeddingConfigRequest(BaseModel):
     model_id: str
     model_params: dict[str, Any] = Field(default_factory=dict)
 
 
-class EmbeddingResponse(BaseModel):
-    vector: list[float]
-
-
-class DocumentRequest(BaseModel):
-    embedding: EmbeddingRequest
-    chunking: ChunkingRequest
+class DocumentIngestionRequest(BaseModel):
+    embedding: EmbeddingConfigRequest
+    chunking: ChunkingConfigRequest
 
 
 class DocumentResponse(BaseModel):
@@ -83,18 +66,21 @@ class DocumentResponse(BaseModel):
     model_id: str
 
 
-class DocumentResponseInternal(BaseModel):
+class DocumentChunkResponse(BaseModel):
     id: str
-    filename: str
-    model_id: str
-    collection: str
+    chunk: str
+    meta_data: Optional[dict[str, Any]] = None
 
 
-class ChunkEmbeddingItem(BaseModel):
-    chunk: ChunkingResponse
-    embeddings: EmbeddingResponse
+class EmbeddingVectorResponse(BaseModel):
+    vector: list[float]
+
+
+class ChunkEmbeddingResponseItem(BaseModel):
+    chunk: DocumentChunkResponse
+    embeddings: EmbeddingVectorResponse
 
 
 class DocumentEmbeddingChunkResponse(BaseModel):
     infos: DocumentResponse
-    datas: list[ChunkEmbeddingItem]
+    datas: list[ChunkEmbeddingResponseItem]

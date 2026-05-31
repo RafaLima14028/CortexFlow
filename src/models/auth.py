@@ -3,14 +3,14 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
 
-class UserRegister(BaseModel):
+class UserCreate(BaseModel):
     name: str
     email: EmailStr
     hashed_password: str
     created_at: datetime = Field(default_factory=datetime.now)
 
 
-class UserResponse(BaseModel):
+class UserInDB(BaseModel):
     id: str = Field(alias="_id")
     name: str
     email: EmailStr

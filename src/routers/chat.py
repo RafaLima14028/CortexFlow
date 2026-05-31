@@ -8,7 +8,8 @@ from src.core.security import (
     extract_user_id_by_token,
 )
 from src.core.settings import get_settings
-from src.schemas.chat import ChatPostRequest, ChatPostResponse
+from src.schemas.chat import ChatPostRequest, ChatPostResponse, ChatMessageResponse
+from src.models.chat import ChatMessageInDB
 from src.services.chat import (
     UNSUPPORTED_RAG_MODEL_MESSAGE,
     UnsupportedRagModelError,
@@ -29,13 +30,23 @@ async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_d
     use_rag = websocket.query_params.get("use_rag", "true").lower() != "false"
 
     try:
-        rag_limit = int(websocket.query_params.get("rag_limit", "5"))
+        rag_limit: int = int(websocket.query_params.get("rag_limit", "5"))
+
+        if rag_limit <= 0:
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Invalid rag_limit"
+            )
+            return
     except ValueError:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid rag_limit"
+        )
         return
 
     if not model:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid model"
+        )
         return
 
     await websocket.accept()
@@ -46,14 +57,18 @@ async def ws_chat(websocket: WebSocket, db: AsyncIOMotorDatabase = Depends(get_d
     chat_id = auth_message.get("chat_id", None)
 
     if not token:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token"
+        )
         return
 
     try:
         payload = decode_jwt_token(token)
         user_id = extract_user_id_by_token(payload=payload)
     except Exception:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token"
+        )
         return
 
     if chat_id is None:
@@ -146,7 +161,7 @@ async def get_all_chat_id(
     )
 
 
-@router.get(path="/{id}", response_model=list)
+@router.get(path="/{id}", response_model=list[ChatMessageResponse])
 async def get_chat(
     id: str,
     payload: dict = Depends(get_token_from_header),
@@ -154,9 +169,18 @@ async def get_chat(
 ):
     user_id = payload.get("sub")
 
-    all_messages = await get_messages_by_chat_id(chat_id=id, user_id=user_id, db=db)
+    all_messages: list[ChatMessageInDB] = await get_messages_by_chat_id(
+        chat_id=id, user_id=user_id, db=db
+    )
 
-    return all_messages
+    return [
+        ChatMessageResponse(
+            index=msg.index,
+            content=msg.content,
+            role=msg.role,
+        )
+        for msg in all_messages
+    ]
 
 
 @router.post(path="/", response_model=ChatPostResponse)

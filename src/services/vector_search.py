@@ -103,9 +103,11 @@ async def search_user_vector_documents(
         )
 
         if embedding_key not in embedding_cache:
-            embedding_cache[embedding_key] = await generate_text_embedding(
-                model_id=model_id, params=params, text=query
-            )
+            embedding_cache[embedding_key] = (
+                await generate_text_embedding(
+                    model_id=model_id, params=params, texts=[query]
+                )
+            )[0]
 
         pipeline = [
             {

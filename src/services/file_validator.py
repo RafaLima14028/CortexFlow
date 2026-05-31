@@ -55,7 +55,7 @@ def validate_extension(filename: str) -> None:
         )
 
 
-async def validate_filename(filename: str | None) -> None:
+def validate_filename(filename: str | None) -> None:
     if not filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required"

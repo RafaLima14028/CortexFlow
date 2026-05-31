@@ -1,9 +1,8 @@
 from typing import Any
-
 from pydantic import BaseModel
 
 
-class EmbeddingsResults(BaseModel):
+class EmbeddingResult(BaseModel):
     embeddings: list[float]
     dimensions: int
     chunk: str
