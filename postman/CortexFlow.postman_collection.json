@@ -1,0 +1,378 @@
+{
+  "info": {
+    "_postman_id": "d5166770-b842-4830-93ba-a58b52bcc9c5",
+    "name": "CortexFlow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "48140172",
+    "_collection_link": "https://go.postman.co/collection/48140172-d5166770-b842-4830-93ba-a58b52bcc9c5?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create new user",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Rafael Alves de Lima\",\r\n    \"email\": \"rafael.alv334@gmail.com\",\r\n    \"password\": \"B3lt06123@#\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.environment.set(\"token\", response.access_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"rafael.alv334@gmail.com\",\r\n    \"password\": \"B3lt06123@#\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Get Chat Messages",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"rafael.teste@gmail.com\",\r\n    \"password\": \"1234\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chat/4ab98bf9-f17e-48c2-b310-36f415370c0a",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chat",
+                "4ab98bf9-f17e-48c2-b310-36f415370c0a"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Chat ids",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"rafael.teste@gmail.com\",\r\n    \"password\": \"1234\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chat/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chat",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Chat Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"model_id\": \"meta-llama/llama-4-maverick\",\r\n    \"user_message\": \"sabe o que foi o meu estágio?\",\r\n    \"model_params\": {}\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chat"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "ef11bcb4-166b-4390-88f0-0e3de8f643fc",
+                  "src": "/E:/CURRÍCULOS/CURRÍCULO-1.pdf"
+                },
+                {
+                  "key": "document_data",
+                  "value": "{\n  \"embedding\": {\n    \"model_id\": \"google/gemini-embedding-2-preview\",\n    \"model_params\": {\n      \"temperature\": 0.5,\n      \"top_p\": 0.8\n    }\n  },\n  \"chunking\": {\n    \"strategy\": \"recursive\",\n    \"config\": {\n      \"chunk_size\": 3000,\n      \"overlap\": 100,\n      \"separators\": [\n        \"\\n\\n\",\n        \"\\n\",\n        \". \",\n        \" \"\n      ]\n    }\n  }\n}",
+                  "type": "text",
+                  "uuid": "9e2960da-e3e4-4f6a-9e5c-6f74b3fc7bfc"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/documents/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documents",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Files User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documents/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documents",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Embeddings User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documents/6a1c6555a56aa2731a4db807",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documents",
+                "6a1c6555a56aa2731a4db807"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documents/6a0f30610b9d9832735e2af0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documents",
+                "6a0f30610b9d9832735e2af0"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Models",
+      "item": [
+        {
+          "name": "Get Embeddings Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/models/embeddings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "models",
+                "embeddings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rerancking Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/models/reranking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "models",
+                "reranking"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Chat Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/models/chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "models",
+                "chat"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Home",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

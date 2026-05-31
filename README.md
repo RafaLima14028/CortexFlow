@@ -531,3 +531,7 @@ CortexFlow demonstrates the ability to:
 - Separate implemented features from future roadmap work
 
 For an interviewer, the most important signal is that this is not only a prompt wrapper. It is a backend system that connects authentication, file processing, embeddings, vector search, agents, and streaming into one coherent project.
+
+## Postman Collection
+
+The `postman` folder contains a Postman collection (`CortexFlow.postman_collection.json`) and an environment file (`CortexFlow.postman_environment.json`). These can be imported into Postman to easily test the API endpoints, including authentication, document upload, chat, and model discovery. The collection defines requests for each route with example payloads, and the environment sets the base URL and includes a placeholder for the JWT access token.
